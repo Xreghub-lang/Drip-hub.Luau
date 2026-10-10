@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════
--- Drip Hub  v1.4  |  DOORS - The Hotel
+-- Drip Hub  v1.5  |  DOORS - The Hotel
 -- Executor: Any UNC-compatible (Synapse X, KRNL, Delta, Xeno, Fluxus)
 -- Key provider: https://jnkie.com/get-key/driphubkeys
 -- Discord:      https://discord.gg/Phy76Bg6B
@@ -26,6 +26,50 @@ LP.CharacterAdded:Connect(refreshChar)
 
 local function alive()
     return Char and Root and Hum and Hum.Health > 0
+end
+
+-- ── JNKIE SDK ────────────────────────────────────
+-- loads jnkie's official SDK and configures it for Drip Hub
+local KEY_URL  = "https://jnkie.com/get-key/driphubkeys"
+local DISCORD  = "https://discord.gg/Phy76Bg6B"
+local unlocked = false
+local menuOpen = false
+
+local Junkie
+local jnkieLoaded = false
+task.spawn(function()
+    local ok, sdk = pcall(function()
+        return loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
+    end)
+    if ok and sdk then
+        sdk.service    = "102836"   -- your jnkie service ID
+        sdk.identifier = "1210939"  -- your jnkie user ID
+        Junkie = sdk
+        jnkieLoaded = true
+    else
+        warn("[DripHub] Failed to load jnkie SDK:", sdk)
+    end
+end)
+
+local function openURL(url)
+    if syn and syn.open_url then syn.open_url(url)
+    elseif setclipboard then setclipboard(url) end
+end
+
+-- validate key via jnkie SDK  (case-sensitive, no mutation)
+local function validateKey(userKey)
+    if not jnkieLoaded or not Junkie then
+        return false, "sdk_loading"
+    end
+    local ok, result = pcall(Junkie.check_key, userKey)
+    if not ok then
+        warn("[DripHub] check_key error:", result)
+        return false, "sdk_error"
+    end
+    if result.valid then
+        return true
+    end
+    return false, tostring(result.error or "invalid")
 end
 
 -- ── DOORS PATHS (VOLATILE) ───────────────────────
@@ -62,50 +106,6 @@ local ENTITY_EVENTS = {
     Screech="ScreechWarning", Eyes="EyesLookingAt",
     Ambush="AmbushIncoming",  Rush="RushIncoming", Seek="SeekChase",
 }
-
--- ── KEY SYSTEM ───────────────────────────────────
-local JNKIE_API = "1c4742c5-deb6-473a-9e62-d1670f39519e"
-local KEY_URL   = "https://jnkie.com/get-key/driphubkeys"
-local DISCORD   = "https://discord.gg/Phy76Bg6B"
-local unlocked  = false
-local menuOpen  = false
-
-local function openURL(url)
-    if syn and syn.open_url then syn.open_url(url)
-    elseif setclipboard then setclipboard(url) end
-end
-
-local function httpGet(opts)
-    local fn = (syn and syn.request)
-            or (http and http.request)
-            or http_request or request
-    if not fn then return nil end
-    local ok, res = pcall(fn, opts)
-    return ok and res or nil
-end
-
-local function validateKey(userKey)
-    local res = httpGet({
-        Url    = "https://jnkie.com/api/v1/checkKey"
-                 .."?key="..userKey.."&apiKey="..JNKIE_API,
-        Method = "GET",
-        Headers = { ["Content-Type"] = "application/json" },
-    })
-    if not res then return false, "no_http" end
-    print("[DripHub] status:", res.StatusCode)
-    print("[DripHub] body:",   res.Body)
-    if res.StatusCode ~= 200 then
-        return false, "http_"..tostring(res.StatusCode)
-    end
-    local body = res.Body or ""
-    if body:find('"success"%s*:%s*true')
-    or body:find('"valid"%s*:%s*true')
-    or body:find('"status"%s*:%s*"ok"')
-    or body:find('"status"%s*:%s*"valid"') then
-        return true
-    end
-    return false, body
-end
 
 -- ── CONFIG ───────────────────────────────────────
 local cfg = {
@@ -287,7 +287,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ── ANTI ENTITY (VOLATILE: event names) ─────────
+-- ── ANTI ENTITY (VOLATILE) ───────────────────────
 for entityName, evName in pairs(ENTITY_EVENTS) do
     local cfgKey = "anti"..entityName
     local ev = RS:FindFirstChild(evName)
@@ -327,7 +327,7 @@ task.spawn(function()
     end
 end)
 
--- ── ESP — proper CurrentRooms scan ───────────────
+-- ── ESP ──────────────────────────────────────────
 local espObjs = {}
 local ESP_COLORS = {
     player=Color3.fromRGB(255,255,255), door  =Color3.fromRGB(0,200,255),
@@ -338,7 +338,7 @@ local ESP_COLORS = {
 local function espLabel(parent, color, text)
     local old = parent:FindFirstChild("_ESP_")
     if old then old:Destroy() end
-    local bb  = Instance.new("BillboardGui")
+    local bb = Instance.new("BillboardGui")
     bb.Name="_ESP_"; bb.AlwaysOnTop=true
     bb.Size=UDim2.new(0,150,0,34); bb.StudsOffset=Vector3.new(0,4,0)
     bb.Parent=parent
@@ -453,15 +453,13 @@ end)
 -- ════════════════════════════════════════════════
 local gui = Instance.new("ScreenGui")
 gui.Name="DripHub_DOORS"; gui.ResetOnSpawn=false
-gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
-gui.IgnoreGuiInset=true
+gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; gui.IgnoreGuiInset=true
 
 if syn and syn.protect_gui then
     syn.protect_gui(gui); gui.Parent=game.CoreGui
 elseif gethui then gui.Parent=gethui()
 else gui.Parent=LP.PlayerGui end
 
--- ── DOOR ICON HELPER ─────────────────────────────
 local function makeDoorIcon(parent, x, y, w, h, zi)
     local body=Instance.new("Frame",parent)
     body.Size=UDim2.new(0,w,0,h); body.Position=UDim2.new(0,x,0,y)
@@ -556,7 +554,7 @@ ksTitleLbl.TextSize=24; ksTitleLbl.ZIndex=102
 
 local ksSubLbl=Instance.new("TextLabel",keyScreen)
 ksSubLbl.Size=UDim2.new(1,-20,0,16); ksSubLbl.Position=UDim2.new(0,10,0,156)
-ksSubLbl.BackgroundTransparency=1; ksSubLbl.Text="DOORS  •  The Hotel  |  v1.4"
+ksSubLbl.BackgroundTransparency=1; ksSubLbl.Text="DOORS  •  The Hotel  |  v1.5"
 ksSubLbl.TextColor3=Color3.fromRGB(140,120,200); ksSubLbl.Font=Enum.Font.Gotham
 ksSubLbl.TextSize=11; ksSubLbl.ZIndex=102
 
@@ -599,6 +597,20 @@ ksStatus.BackgroundTransparency=1; ksStatus.Text=""
 ksStatus.TextColor3=Color3.fromRGB(255,80,80)
 ksStatus.Font=Enum.Font.GothamBold; ksStatus.TextSize=11; ksStatus.ZIndex=102
 
+-- SDK loading indicator
+local ksSDKStatus=Instance.new("TextLabel",keyScreen)
+ksSDKStatus.Size=UDim2.new(1,-20,0,16); ksSDKStatus.Position=UDim2.new(0,10,0,368)
+ksSDKStatus.BackgroundTransparency=1; ksSDKStatus.Text="⟳ Loading key system..."
+ksSDKStatus.TextColor3=Color3.fromRGB(140,120,200)
+ksSDKStatus.Font=Enum.Font.Gotham; ksSDKStatus.TextSize=10; ksSDKStatus.ZIndex=102
+
+-- update SDK indicator once loaded
+task.spawn(function()
+    while not jnkieLoaded do task.wait(0.5) end
+    ksSDKStatus.Text="✓ Key system ready"
+    ksSDKStatus.TextColor3=Color3.fromRGB(80,200,120)
+end)
+
 local function shakeBox()
     for i=1,6 do
         local off=(i%2==0) and 7 or -7
@@ -626,12 +638,16 @@ local function unlockSuccess()
     mobGlow.Visible=true; mobBtn.Visible=true
 end
 
--- case-sensitive, whitespace strip only — no .upper()
 local function tryKey()
     local input=ksBox.Text:gsub("%s","")
     if input=="" then
         ksStatus.TextColor3=Color3.fromRGB(255,80,80)
         ksStatus.Text="✗  Paste your key first"
+        return
+    end
+    if not jnkieLoaded then
+        ksStatus.TextColor3=Color3.fromRGB(255,180,50)
+        ksStatus.Text="⟳  Key system still loading, wait..."
         return
     end
     ksUnlock.Text="Checking..."
@@ -644,9 +660,12 @@ local function tryKey()
         else
             ksUnlock.Text="UNLOCK"
             ksUnlock.BackgroundColor3=Color3.fromRGB(88,48,210)
-            if err=="no_http" then
+            if err=="sdk_loading" then
                 ksStatus.TextColor3=Color3.fromRGB(255,180,50)
-                ksStatus.Text="⚠  No HTTP — try Synapse X or Delta"
+                ksStatus.Text="⟳  Key system loading, try again"
+            elseif err=="sdk_error" then
+                ksStatus.TextColor3=Color3.fromRGB(255,180,50)
+                ksStatus.Text="⚠  SDK error — check executor HTTP"
             else
                 ksStatus.TextColor3=Color3.fromRGB(255,80,80)
                 ksStatus.Text="✗  Invalid key — tap GET KEY below"
@@ -723,7 +742,7 @@ t1.Font=Enum.Font.GothamBold; t1.TextSize=17; t1.ZIndex=3
 
 local t2=Instance.new("TextLabel",titleBar)
 t2.Size=UDim2.new(0,160,0,14); t2.Position=UDim2.new(0,14,0,28)
-t2.BackgroundTransparency=1; t2.Text="DOORS  •  v1.4"
+t2.BackgroundTransparency=1; t2.Text="DOORS  •  v1.5"
 t2.TextColor3=Color3.fromRGB(190,165,255)
 t2.TextXAlignment=Enum.TextXAlignment.Left
 t2.Font=Enum.Font.Gotham; t2.TextSize=10; t2.ZIndex=3
@@ -874,7 +893,7 @@ discLbl.Font=Enum.Font.GothamBold; discLbl.TextSize=12; discLbl.ZIndex=7
 
 local footVer=Instance.new("TextLabel",footer)
 footVer.Size=UDim2.new(0,110,1,0); footVer.Position=UDim2.new(1,-115,0,0)
-footVer.BackgroundTransparency=1; footVer.Text="Drip Hub  v1.4"
+footVer.BackgroundTransparency=1; footVer.Text="Drip Hub  v1.5"
 footVer.TextColor3=Color3.fromRGB(80,65,120)
 footVer.TextXAlignment=Enum.TextXAlignment.Right
 footVer.Font=Enum.Font.Gotham; footVer.TextSize=10; footVer.ZIndex=6
@@ -918,4 +937,4 @@ UIS.InputBegan:Connect(function(inp, gpe)
     if inp.KeyCode==cfg.keyHide then cfg.autoHide=not cfg.autoHide end
 end)
 
-print("[Drip Hub v1.4 — DOORS] paste key to unlock | check console if key fails")
+print("[Drip Hub v1.5] loaded — wait for '✓ Key system ready' then paste key")
