@@ -103,16 +103,70 @@ end
 
 -- Validate against jnkie API
 -- GET jnkie.com/api/v1/checkKey?key=X&apiKey=Y → {"success":true/false}
+-- ────────────────────────────────────────────────
+-- VALIDATE KEY  (fixed — case-sensitive, debug output)
+-- ────────────────────────────────────────────────
 local function validateKey(userKey)
     local res = httpGet({
         Url    = "https://jnkie.com/api/v1/checkKey"
-                 .."?key="..userKey.."&apiKey="..JNKIE_API,
+                 .."?key="..userKey
+                 .."&apiKey="..JNKIE_API,
         Method = "GET",
+        Headers = { ["Content-Type"] = "application/json" },
     })
     if not res then return false, "no_http" end
-    if res.StatusCode ~= 200 then return false, "http_"..tostring(res.StatusCode) end
+    -- debug: print exact response so you can see what jnkie returns
+    print("[DripHub] status:", res.StatusCode)
+    print("[DripHub] body:", res.Body)
+    if res.StatusCode ~= 200 then
+        return false, "http_"..tostring(res.StatusCode)
+    end
     local body = res.Body or ""
-    return body:find('"success"%s*:%s*true') ~= nil, body
+    -- match both casing variants jnkie might return
+    if body:find('"success"%s*:%s*true')
+    or body:find('"valid"%s*:%s*true')
+    or body:find('"status"%s*:%s*"ok"')
+    or body:find('"status"%s*:%s*"valid"') then
+        return true
+    end
+    return false, body
+end
+
+-- ────────────────────────────────────────────────
+-- TRY KEY  (fixed — no .upper(), only strip whitespace)
+-- ────────────────────────────────────────────────
+local function tryKey()
+    -- strip whitespace only — DO NOT uppercase, jnkie keys are case-sensitive
+    local input = ksBox.Text:gsub("%s","")
+    if input == "" then
+        ksStatus.TextColor3 = Color3.fromRGB(255,80,80)
+        ksStatus.Text       = "✗  Paste your key first"
+        return
+    end
+    ksUnlock.Text             = "Checking..."
+    ksUnlock.BackgroundColor3 = Color3.fromRGB(60,35,140)
+    ksStatus.Text             = ""
+    task.spawn(function()
+        local valid, err = validateKey(input)
+        if valid then
+            unlockSuccess()
+        else
+            ksUnlock.Text             = "UNLOCK"
+            ksUnlock.BackgroundColor3 = Color3.fromRGB(88,48,210)
+            if err == "no_http" then
+                ksStatus.TextColor3 = Color3.fromRGB(255,180,50)
+                ksStatus.Text       = "⚠  No HTTP — try Synapse X or Delta"
+            else
+                ksStatus.TextColor3 = Color3.fromRGB(255,80,80)
+                ksStatus.Text       = "✗  Invalid key — tap GET KEY below"
+                ksBox.BackgroundColor3 = Color3.fromRGB(38,12,12)
+                shakeBox()
+                task.delay(0.35, function()
+                    ksBox.BackgroundColor3 = Color3.fromRGB(18,16,32)
+                end)
+            end
+        end
+    end)
 end
 
 -- ────────────────────────────────────────────────
