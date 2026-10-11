@@ -29,7 +29,6 @@ local function alive()
 end
 
 -- ── JNKIE SDK ────────────────────────────────────
--- loads jnkie's official SDK and configures it for Drip Hub
 local KEY_URL  = "https://jnkie.com/get-key/driphubkeys"
 local DISCORD  = "https://discord.gg/Phy76Bg6B"
 local unlocked = false
@@ -42,12 +41,12 @@ task.spawn(function()
         return loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
     end)
     if ok and sdk then
-        sdk.service    = "102836"   -- your jnkie service ID
-        sdk.identifier = "1210939"  -- your jnkie user ID
+        sdk.service    = "102836"
+        sdk.identifier = "1210939"
         Junkie = sdk
         jnkieLoaded = true
     else
-        warn("[DripHub] Failed to load jnkie SDK:", sdk)
+        warn("[DripHub] jnkie SDK failed:", sdk)
     end
 end)
 
@@ -56,39 +55,11 @@ local function openURL(url)
     elseif setclipboard then setclipboard(url) end
 end
 
--- validate key via jnkie SDK  (case-sensitive, no mutation)
 local function validateKey(userKey)
-    if not jnkieLoaded or not Junkie then
-        return false, "sdk_loading"
-    end
+    if not jnkieLoaded or not Junkie then return false, "sdk_loading" end
     local ok, result = pcall(Junkie.check_key, userKey)
-    if not ok then
-        warn("[DripHub] check_key error:", result)
-        return false, "sdk_error"
-    end
-    if result.valid then
-        return 
-truelocal function unlockSuccess()
-    unlocked = true
-    ksStatus.TextColor3 = Color3.fromRGB(80,255,120)
-    ksStatus.Text       = "✓  Welcome to Drip Hub"
-    task.wait(0.8)
-
-    -- destroy cleanly instead of tweening (avoids partial-fade bug)
-    keyScreen:Destroy()
-
-    -- show mobile button
-    mobGlow.Visible = true
-    mobBtn.Visible  = true
-
-    -- auto-open the main menu immediately
-    menuOpen        = true
-    frame.Visible   = true
-    mobBtn.BackgroundColor3         = Color3.fromRGB(120,70,240)
-    mobGlow.BackgroundTransparency  = 0.55
-end
-    end
-    return false, tostring(result.error or "invalid")
+    if not ok then warn("[DripHub] check_key:", result); return false, "sdk_error" end
+    return result.valid, tostring(result.error or "invalid")
 end
 
 -- ── DOORS PATHS (VOLATILE) ───────────────────────
@@ -98,28 +69,20 @@ local ENTITY_NAMES = {
     "Grumble","Gloombat","Dread","Firedamp","Watcher",
 }
 local ENTITY_COLOR = {
-    Rush    = Color3.fromRGB(255, 50,  50),
-    Ambush  = Color3.fromRGB(255,120,   0),
-    Seek    = Color3.fromRGB(255, 80,  20),
-    Figure  = Color3.fromRGB(180,  0,   0),
-    Eyes    = Color3.fromRGB(255,220,  50),
-    Screech = Color3.fromRGB(255,100, 200),
-    Halt    = Color3.fromRGB( 40,200, 255),
-    Dupe    = Color3.fromRGB(180,130, 255),
-    Snare   = Color3.fromRGB(100,200,  80),
-    Giggle  = Color3.fromRGB(255,200,  80),
+    Rush=Color3.fromRGB(255,50,50),   Ambush=Color3.fromRGB(255,120,0),
+    Seek=Color3.fromRGB(255,80,20),   Figure=Color3.fromRGB(180,0,0),
+    Eyes=Color3.fromRGB(255,220,50),  Screech=Color3.fromRGB(255,100,200),
+    Halt=Color3.fromRGB(40,200,255),  Dupe=Color3.fromRGB(180,130,255),
+    Snare=Color3.fromRGB(100,200,80), Giggle=Color3.fromRGB(255,200,80),
 }
-local function entityColor(n)
-    return ENTITY_COLOR[n] or Color3.fromRGB(220,220,220)
-end
+local function entityColor(n) return ENTITY_COLOR[n] or Color3.fromRGB(220,220,220) end
 
-local HIDE_NAMES = { "Closet","Wardrobe","Bed","BedUnder","Locker" }
-local ITEM_NAMES = { "Key","Lockpick","Lighter","Candle","Flashlight","Vitamins","Crucifix","Lantern" }
-
+local HIDE_NAMES = {"Closet","Wardrobe","Bed","BedUnder","Locker"}
+local ITEM_NAMES = {"Key","Lockpick","Lighter","Candle","Flashlight","Vitamins","Crucifix","Lantern"}
 local REMOTES = {
-    hide    = RS:FindFirstChild("HideInSpot"),
-    code    = RS:FindFirstChild("EnterCode"),
-    breaker = RS:FindFirstChild("FlipBreaker"),
+    hide=RS:FindFirstChild("HideInSpot"),
+    code=RS:FindFirstChild("EnterCode"),
+    breaker=RS:FindFirstChild("FlipBreaker"),
 }
 local ENTITY_EVENTS = {
     Screech="ScreechWarning", Eyes="EyesLookingAt",
@@ -128,29 +91,19 @@ local ENTITY_EVENTS = {
 
 -- ── CONFIG ───────────────────────────────────────
 local cfg = {
-    speedHack=false,  walkSpeed=30,
-    jumpBoost=false,  jumpPower=50,
-    flyEnabled=false, flySpeed=50,
-    noclip=false,     noAccel=false,
-    doorNoclip=true,  doorReach=false,
-    fastClosetExit=false, antiAFK=true,
-    autoInteract=false,   autoHide=false,
-    autoBreaker=false,    autoLibCode=false,
-    bruteforce=false,     bruteRate=0.004,
-    antiScreech=false, antiEyes=false,
-    antiAmbush=false,  antiRush=false,
-    antiDupe=false,    antiSnare=false,
-    antiFigure=false,  antiSeek=false,
+    speedHack=false, walkSpeed=30, jumpBoost=false, jumpPower=50,
+    flyEnabled=false, flySpeed=50, noclip=false, noAccel=false,
+    doorNoclip=true, doorReach=false, fastClosetExit=false, antiAFK=true,
+    autoInteract=false, autoHide=false, autoBreaker=false,
+    autoLibCode=false, bruteforce=false, bruteRate=0.004,
+    antiScreech=false, antiEyes=false, antiAmbush=false, antiRush=false,
+    antiDupe=false, antiSnare=false, antiFigure=false, antiSeek=false,
     noDmgScreech=true, noDmgGlitch=true, noDmgHalt=true,
-    espOn=false,
-    espEntities=true,  espEntityDist=true,
-    espPlayers=true,   espDoors=true,
-    espItems=true,     espGold=true,
-    espChests=true,    espClosets=false,
-    keyNoclip=Enum.KeyCode.N,
-    keyFly   =Enum.KeyCode.F,
-    keyHide  =Enum.KeyCode.Q,
-    keyMenu  =Enum.KeyCode.RightShift,
+    espOn=false, espEntities=true, espEntityDist=true,
+    espPlayers=true, espDoors=true, espItems=true,
+    espGold=true, espChests=true, espClosets=false,
+    keyNoclip=Enum.KeyCode.N, keyFly=Enum.KeyCode.F,
+    keyHide=Enum.KeyCode.Q,   keyMenu=Enum.KeyCode.RightShift,
 }
 
 -- ── ANTI-AFK ─────────────────────────────────────
@@ -165,7 +118,7 @@ end)
 RunService.Heartbeat:Connect(function()
     if not alive() then return end
     if cfg.speedHack then Hum.WalkSpeed = cfg.walkSpeed end
-    if cfg.jumpBoost then Hum.JumpPower = cfg.jumpPower  end
+    if cfg.jumpBoost then Hum.JumpPower = cfg.jumpPower end
     if cfg.noAccel then
         Root.AssemblyLinearVelocity =
             Vector3.new(0, Root.AssemblyLinearVelocity.Y, 0)
@@ -185,8 +138,8 @@ local flyConn, flyBV, flyBG
 
 local function stopFly()
     if flyConn then flyConn:Disconnect(); flyConn=nil end
-    if flyBV   then flyBV:Destroy();  flyBV=nil  end
-    if flyBG   then flyBG:Destroy();  flyBG=nil  end
+    if flyBV   then flyBV:Destroy(); flyBV=nil end
+    if flyBG   then flyBG:Destroy(); flyBG=nil end
     if Hum     then Hum:ChangeState(Enum.HumanoidStateType.Jumping) end
 end
 
@@ -349,9 +302,9 @@ end)
 -- ── ESP ──────────────────────────────────────────
 local espObjs = {}
 local ESP_COLORS = {
-    player=Color3.fromRGB(255,255,255), door  =Color3.fromRGB(0,200,255),
-    gold  =Color3.fromRGB(255,200,  0), item  =Color3.fromRGB(200,0,255),
-    chest =Color3.fromRGB(255,180,  0), closet=Color3.fromRGB(0,255,100),
+    player=Color3.fromRGB(255,255,255), door=Color3.fromRGB(0,200,255),
+    gold=Color3.fromRGB(255,200,0),     item=Color3.fromRGB(200,0,255),
+    chest=Color3.fromRGB(255,180,0),    closet=Color3.fromRGB(0,255,100),
 }
 
 local function espLabel(parent, color, text)
@@ -359,8 +312,7 @@ local function espLabel(parent, color, text)
     if old then old:Destroy() end
     local bb = Instance.new("BillboardGui")
     bb.Name="_ESP_"; bb.AlwaysOnTop=true
-    bb.Size=UDim2.new(0,150,0,34); bb.StudsOffset=Vector3.new(0,4,0)
-    bb.Parent=parent
+    bb.Size=UDim2.new(0,150,0,34); bb.StudsOffset=Vector3.new(0,4,0); bb.Parent=parent
     local lbl = Instance.new("TextLabel", bb)
     lbl.Size=UDim2.fromScale(1,1); lbl.BackgroundTransparency=1
     lbl.TextColor3=color; lbl.TextStrokeTransparency=0.4
@@ -403,14 +355,11 @@ local function buildESP()
             local part = entity:FindFirstChild("HumanoidRootPart")
                       or entity:FindFirstChildWhichIsA("BasePart")
             if part then
-                local distStr = ""
+                local ds = ""
                 if cfg.espEntityDist and Root then
-                    distStr = string.format(" [%.0fm]",
-                        (Root.Position-part.Position).Magnitude)
+                    ds = string.format(" [%.0fm]",(Root.Position-part.Position).Magnitude)
                 end
-                table.insert(espObjs,
-                    espLabel(part, entityColor(entity.Name),
-                             "⚠ "..entity.Name..distStr))
+                table.insert(espObjs, espLabel(part, entityColor(entity.Name), "⚠ "..entity.Name..ds))
             end
         end
     end
@@ -419,8 +368,7 @@ local function buildESP()
             if pl ~= LP and pl.Character then
                 local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
                 if hrp then
-                    table.insert(espObjs,
-                        espLabel(hrp, ESP_COLORS.player, "👤 "..pl.Name))
+                    table.insert(espObjs, espLabel(hrp, ESP_COLORS.player, "👤 "..pl.Name))
                 end
             end
         end
@@ -431,18 +379,17 @@ local function buildESP()
         if not obj:IsA("BasePart") then continue end
         local n = obj.Name
         if cfg.espDoors and n:match("^Door%d") then
-            table.insert(espObjs, espLabel(obj, ESP_COLORS.door,   "🚪 "..n))
+            table.insert(espObjs, espLabel(obj, ESP_COLORS.door, "🚪 "..n))
         elseif cfg.espGold and n=="GoldPile" then
-            table.insert(espObjs, espLabel(obj, ESP_COLORS.gold,   "💰 Gold"))
+            table.insert(espObjs, espLabel(obj, ESP_COLORS.gold, "💰 Gold"))
         elseif cfg.espItems then
             for _, iName in ipairs(ITEM_NAMES) do
                 if n==iName then
-                    table.insert(espObjs, espLabel(obj, ESP_COLORS.item, "🔑 "..n))
-                    break
+                    table.insert(espObjs, espLabel(obj, ESP_COLORS.item, "🔑 "..n)); break
                 end
             end
         elseif cfg.espChests and n:lower():match("chest") then
-            table.insert(espObjs, espLabel(obj, ESP_COLORS.chest,  "📦 Chest"))
+            table.insert(espObjs, espLabel(obj, ESP_COLORS.chest, "📦 Chest"))
         elseif cfg.espClosets and table.find(HIDE_NAMES, n) then
             table.insert(espObjs, espLabel(obj, ESP_COLORS.closet, "🚪 Hide"))
         end
@@ -460,9 +407,7 @@ workspace.DescendantAdded:Connect(function(obj)
         local part = obj:FindFirstChild("HumanoidRootPart")
                   or obj:FindFirstChildWhichIsA("BasePart")
         if part then
-            table.insert(espObjs,
-                espLabel(part, entityColor(obj.Name),
-                         "⚠ "..obj.Name.." [SPAWNED]"))
+            table.insert(espObjs, espLabel(part, entityColor(obj.Name), "⚠ "..obj.Name.." [SPAWNED]"))
         end
     end
 end)
@@ -490,8 +435,7 @@ local function makeDoorIcon(parent, x, y, w, h, zi)
     arch.BackgroundColor3=Color3.fromRGB(110,65,230)
     arch.BorderSizePixel=0; arch.ZIndex=(zi or 3)+1
     local knob=Instance.new("Frame",body)
-    knob.Size=UDim2.new(0,math.max(3,math.floor(w*0.22)),
-                          0,math.max(3,math.floor(w*0.22)))
+    knob.Size=UDim2.new(0,math.max(3,math.floor(w*0.22)),0,math.max(3,math.floor(w*0.22)))
     knob.Position=UDim2.new(0,math.floor(w*0.18),0.58,-2)
     knob.BackgroundColor3=Color3.fromRGB(255,210,80)
     knob.BorderSizePixel=0; knob.ZIndex=(zi or 3)+1
@@ -499,7 +443,194 @@ local function makeDoorIcon(parent, x, y, w, h, zi)
     return body
 end
 
--- ── MOBILE BUTTON (hidden until unlocked) ────────
+-- ── MAIN MENU (built first so unlockSuccess can reference it) ──
+local frame=Instance.new("Frame",gui)
+frame.Size=UDim2.new(0,320,0,560); frame.Position=UDim2.new(0.5,-160,0.5,-280)
+frame.BackgroundColor3=Color3.fromRGB(13,13,20)
+frame.BorderSizePixel=0; frame.Active=true; frame.Draggable=true; frame.Visible=false
+Instance.new("UICorner",frame).CornerRadius=UDim.new(0,14)
+
+local glowF=Instance.new("Frame",frame)
+glowF.Size=UDim2.new(1,4,1,4); glowF.Position=UDim2.new(0,-2,0,-2)
+glowF.BackgroundColor3=Color3.fromRGB(110,65,230)
+glowF.BackgroundTransparency=0.82; glowF.BorderSizePixel=0; glowF.ZIndex=0
+Instance.new("UICorner",glowF).CornerRadius=UDim.new(0,16)
+
+local titleBar=Instance.new("Frame",frame)
+titleBar.Size=UDim2.new(1,0,0,48)
+titleBar.BackgroundColor3=Color3.fromRGB(88,48,210)
+titleBar.BorderSizePixel=0; titleBar.ZIndex=2
+Instance.new("UICorner",titleBar).CornerRadius=UDim.new(0,14)
+local tbFix=Instance.new("Frame",titleBar)
+tbFix.Size=UDim2.new(1,0,0.5,0); tbFix.Position=UDim2.new(0,0,0.5,0)
+tbFix.BackgroundColor3=Color3.fromRGB(88,48,210); tbFix.BorderSizePixel=0; tbFix.ZIndex=2
+
+local t1=Instance.new("TextLabel",titleBar)
+t1.Size=UDim2.new(0,160,0,22); t1.Position=UDim2.new(0,14,0,6)
+t1.BackgroundTransparency=1; t1.Text="Drip Hub"
+t1.TextColor3=Color3.new(1,1,1); t1.TextXAlignment=Enum.TextXAlignment.Left
+t1.Font=Enum.Font.GothamBold; t1.TextSize=17; t1.ZIndex=3
+
+local t2=Instance.new("TextLabel",titleBar)
+t2.Size=UDim2.new(0,160,0,14); t2.Position=UDim2.new(0,14,0,28)
+t2.BackgroundTransparency=1; t2.Text="DOORS  •  v1.5"
+t2.TextColor3=Color3.fromRGB(190,165,255); t2.TextXAlignment=Enum.TextXAlignment.Left
+t2.Font=Enum.Font.Gotham; t2.TextSize=10; t2.ZIndex=3
+
+local rDoor=makeDoorIcon(titleBar,0,0,20,28,3)
+rDoor.Position=UDim2.new(1,-34,0.5,-14)
+
+local nameLbl=Instance.new("TextLabel",titleBar)
+nameLbl.Size=UDim2.new(0,80,1,0); nameLbl.Position=UDim2.new(1,-118,0,0)
+nameLbl.BackgroundTransparency=1; nameLbl.Text="Drip Hub"
+nameLbl.TextColor3=Color3.fromRGB(210,185,255); nameLbl.TextXAlignment=Enum.TextXAlignment.Right
+nameLbl.Font=Enum.Font.GothamBold; nameLbl.TextSize=12; nameLbl.ZIndex=3
+
+Instance.new("Frame",frame).Size=UDim2.new(1,-24,0,1)
+local divMain=frame:FindFirstChildWhichIsA("Frame")
+divMain.Position=UDim2.new(0,12,0,49)
+divMain.BackgroundColor3=Color3.fromRGB(80,50,160)
+divMain.BackgroundTransparency=0.5; divMain.BorderSizePixel=0
+
+local scroll=Instance.new("ScrollingFrame",frame)
+scroll.Size=UDim2.new(1,-8,1,-96); scroll.Position=UDim2.new(0,4,0,53)
+scroll.BackgroundTransparency=1; scroll.ScrollBarThickness=3
+scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y; scroll.CanvasSize=UDim2.new(0,0,0,0)
+
+local layout=Instance.new("UIListLayout",scroll)
+layout.SortOrder=Enum.SortOrder.LayoutOrder; layout.Padding=UDim.new(0,3)
+local padInst=Instance.new("UIPadding",scroll)
+padInst.PaddingLeft=UDim.new(0,6); padInst.PaddingRight=UDim.new(0,6)
+
+local function section(text, order)
+    local lbl=Instance.new("TextLabel",scroll)
+    lbl.Size=UDim2.new(1,-4,0,22); lbl.BackgroundTransparency=1
+    lbl.Text="  "..text; lbl.TextColor3=Color3.fromRGB(130,90,255)
+    lbl.Font=Enum.Font.GothamBold; lbl.TextSize=11
+    lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.LayoutOrder=order
+end
+
+local function toggle(label, key, order, onToggle)
+    local row=Instance.new("Frame",scroll)
+    row.Size=UDim2.new(1,-4,0,28); row.BackgroundColor3=Color3.fromRGB(20,20,30)
+    row.BorderSizePixel=0; row.LayoutOrder=order
+    Instance.new("UICorner",row).CornerRadius=UDim.new(0,7)
+    local lbl=Instance.new("TextLabel",row)
+    lbl.Size=UDim2.new(1,-58,1,0); lbl.Position=UDim2.new(0,10,0,0)
+    lbl.BackgroundTransparency=1; lbl.Text=label
+    lbl.TextColor3=Color3.fromRGB(195,185,220); lbl.TextXAlignment=Enum.TextXAlignment.Left
+    lbl.Font=Enum.Font.Gotham; lbl.TextSize=12
+    local track=Instance.new("Frame",row)
+    track.Size=UDim2.new(0,44,0,22); track.Position=UDim2.new(1,-50,0.5,-11)
+    track.BorderSizePixel=0
+    Instance.new("UICorner",track).CornerRadius=UDim.new(1,0)
+    local thumb=Instance.new("Frame",track)
+    thumb.Size=UDim2.new(0,18,0,18); thumb.BorderSizePixel=0
+    thumb.BackgroundColor3=Color3.new(1,1,1)
+    Instance.new("UICorner",thumb).CornerRadius=UDim.new(1,0)
+    local function refresh()
+        local on=cfg[key]
+        track.BackgroundColor3=on and Color3.fromRGB(100,55,230) or Color3.fromRGB(45,40,65)
+        thumb.Position=on and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,2,0.5,-9)
+    end
+    refresh()
+    local btn=Instance.new("TextButton",row)
+    btn.Size=UDim2.fromScale(1,1); btn.BackgroundTransparency=1; btn.Text=""
+    btn.MouseButton1Click:Connect(function()
+        cfg[key]=not cfg[key]; refresh()
+        if onToggle then onToggle(cfg[key]) end
+    end)
+end
+
+section("MOVEMENT",1)
+toggle("Speed Hack",               "speedHack",      2)
+toggle("Noclip",                   "noclip",         3)
+toggle("Fly",                      "flyEnabled",     4, function(v) if v then startFly() else stopFly() end end)
+toggle("Jump Boost",               "jumpBoost",      5)
+toggle("No Acceleration",          "noAccel",        6)
+section("PLAYER",10)
+toggle("Door Noclip",              "doorNoclip",     11)
+toggle("Door Reach",               "doorReach",      12)
+toggle("Fast Closet Exit",         "fastClosetExit", 13)
+toggle("Anti AFK",                 "antiAFK",        14)
+section("AUTOMATION",20)
+toggle("Auto Interact",            "autoInteract",   21)
+toggle("Auto Hide",                "autoHide",       22)
+toggle("Auto Breaker Box",         "autoBreaker",    23)
+toggle("Auto Library Code",        "autoLibCode",    24)
+toggle("Bruteforce Code",          "bruteforce",     25)
+section("ANTI ENTITY",30)
+toggle("Anti Screech",             "antiScreech",    31)
+toggle("Anti Eyes",                "antiEyes",       32)
+toggle("Anti Rush",                "antiRush",       33)
+toggle("Anti Ambush",              "antiAmbush",     34)
+toggle("Anti Dupe",                "antiDupe",       35)
+toggle("Anti Snare",               "antiSnare",      36)
+toggle("Anti Figure",              "antiFigure",     37)
+toggle("Anti Seek",                "antiSeek",       38)
+section("NO DAMAGE",40)
+toggle("No Dmg  (Screech)",        "noDmgScreech",  41)
+toggle("No Dmg  (Glitch Screech)", "noDmgGlitch",   42)
+toggle("No Dmg  (Halt)",           "noDmgHalt",     43)
+section("ESP",50)
+toggle("ESP Enable",               "espOn",         51, function(v) if v then buildESP() else clearESP() end end)
+toggle("ESP Entities",             "espEntities",   52)
+toggle("ESP Entity Distance",      "espEntityDist", 53)
+toggle("ESP Players",              "espPlayers",    54)
+toggle("ESP Doors",                "espDoors",      55)
+toggle("ESP Items & Keys",         "espItems",      56)
+toggle("ESP Gold",                 "espGold",       57)
+toggle("ESP Chests",               "espChests",     58)
+toggle("ESP Hide Spots",           "espClosets",    59)
+
+-- ── FOOTER ───────────────────────────────────────
+local footDiv=Instance.new("Frame",frame)
+footDiv.Size=UDim2.new(1,-24,0,1); footDiv.Position=UDim2.new(0,12,1,-37)
+footDiv.BackgroundColor3=Color3.fromRGB(80,50,160)
+footDiv.BackgroundTransparency=0.6; footDiv.BorderSizePixel=0; footDiv.ZIndex=5
+
+local footer=Instance.new("Frame",frame)
+footer.Size=UDim2.new(1,0,0,36); footer.Position=UDim2.new(0,0,1,-36)
+footer.BackgroundColor3=Color3.fromRGB(10,10,18); footer.BorderSizePixel=0; footer.ZIndex=5
+Instance.new("UICorner",footer).CornerRadius=UDim.new(0,14)
+local footFix=Instance.new("Frame",footer)
+footFix.Size=UDim2.new(1,0,0.5,0)
+footFix.BackgroundColor3=Color3.fromRGB(10,10,18); footFix.BorderSizePixel=0; footFix.ZIndex=5
+
+local discBtn=Instance.new("TextButton",footer)
+discBtn.Size=UDim2.new(0,115,0,26); discBtn.Position=UDim2.new(0,8,0.5,-13)
+discBtn.BackgroundColor3=Color3.fromRGB(88,101,242); discBtn.BorderSizePixel=0
+discBtn.Text=""; discBtn.AutoButtonColor=false; discBtn.ZIndex=6
+Instance.new("UICorner",discBtn).CornerRadius=UDim.new(0,7)
+local discIcon=Instance.new("TextLabel",discBtn)
+discIcon.Size=UDim2.new(0,26,1,0); discIcon.BackgroundTransparency=1
+discIcon.Text="ⓓ"; discIcon.TextColor3=Color3.new(1,1,1)
+discIcon.Font=Enum.Font.GothamBold; discIcon.TextSize=14; discIcon.ZIndex=7
+local discLbl=Instance.new("TextLabel",discBtn)
+discLbl.Size=UDim2.new(1,-28,1,0); discLbl.Position=UDim2.new(0,26,0,0)
+discLbl.BackgroundTransparency=1; discLbl.Text="Discord"
+discLbl.TextColor3=Color3.new(1,1,1); discLbl.TextXAlignment=Enum.TextXAlignment.Left
+discLbl.Font=Enum.Font.GothamBold; discLbl.TextSize=12; discLbl.ZIndex=7
+
+local footVer=Instance.new("TextLabel",footer)
+footVer.Size=UDim2.new(0,110,1,0); footVer.Position=UDim2.new(1,-115,0,0)
+footVer.BackgroundTransparency=1; footVer.Text="Drip Hub  v1.5"
+footVer.TextColor3=Color3.fromRGB(80,65,120); footVer.TextXAlignment=Enum.TextXAlignment.Right
+footVer.Font=Enum.Font.Gotham; footVer.TextSize=10; footVer.ZIndex=6
+
+discBtn.MouseButton1Click:Connect(function()
+    openURL(DISCORD)
+    discBtn.BackgroundColor3=Color3.fromRGB(60,75,200); discLbl.Text="Copied!"
+    task.delay(2,function() discBtn.BackgroundColor3=Color3.fromRGB(88,101,242); discLbl.Text="Discord" end)
+end)
+discBtn.MouseEnter:Connect(function()
+    TweenSvc:Create(discBtn,TweenInfo.new(0.15),{BackgroundColor3=Color3.fromRGB(105,118,255)}):Play()
+end)
+discBtn.MouseLeave:Connect(function()
+    TweenSvc:Create(discBtn,TweenInfo.new(0.15),{BackgroundColor3=Color3.fromRGB(88,101,242)}):Play()
+end)
+
+-- ── MOBILE BUTTON ────────────────────────────────
 local mobSize=64
 local mobGlow=Instance.new("Frame",gui)
 mobGlow.Size=UDim2.new(0,mobSize+10,0,mobSize+10)
@@ -518,17 +649,23 @@ mobBtn.AutoButtonColor=false; mobBtn.Active=true
 mobBtn.Draggable=true; mobBtn.ZIndex=10; mobBtn.Visible=false
 Instance.new("UICorner",mobBtn).CornerRadius=UDim.new(0,16)
 makeDoorIcon(mobBtn,mobSize/2-11,8,22,30,11)
-
 local mobLbl=Instance.new("TextLabel",mobBtn)
 mobLbl.Size=UDim2.new(1,0,0,14); mobLbl.Position=UDim2.new(0,0,1,-17)
 mobLbl.BackgroundTransparency=1; mobLbl.Text="Drip Hub"
 mobLbl.TextColor3=Color3.fromRGB(210,185,255)
 mobLbl.Font=Enum.Font.GothamBold; mobLbl.TextSize=9; mobLbl.ZIndex=11
 
--- ── KEY SCREEN (floating card) ───────────────────
+mobBtn.MouseButton1Click:Connect(function()
+    if not unlocked then return end
+    menuOpen=not menuOpen; frame.Visible=menuOpen
+    mobBtn.BackgroundColor3=menuOpen and Color3.fromRGB(120,70,240) or Color3.fromRGB(88,48,210)
+    mobGlow.BackgroundTransparency=menuOpen and 0.55 or 0.75
+end)
+
+-- ── KEY SCREEN ───────────────────────────────────
 local keyScreen=Instance.new("Frame",gui)
-keyScreen.Size=UDim2.new(0,340,0,440)
-keyScreen.Position=UDim2.new(0.5,-170,0.5,-220)
+keyScreen.Size=UDim2.new(0,340,0,460)
+keyScreen.Position=UDim2.new(0.5,-170,0.5,-230)
 keyScreen.BackgroundColor3=Color3.fromRGB(11,10,20)
 keyScreen.BorderSizePixel=0; keyScreen.ZIndex=100
 keyScreen.Active=true; keyScreen.Draggable=true
@@ -542,13 +679,11 @@ Instance.new("UICorner",ksGlow).CornerRadius=UDim.new(0,19)
 
 local ksHeader=Instance.new("Frame",keyScreen)
 ksHeader.Size=UDim2.new(1,0,0,46)
-ksHeader.BackgroundColor3=Color3.fromRGB(88,48,210)
-ksHeader.BorderSizePixel=0; ksHeader.ZIndex=101
+ksHeader.BackgroundColor3=Color3.fromRGB(88,48,210); ksHeader.BorderSizePixel=0; ksHeader.ZIndex=101
 Instance.new("UICorner",ksHeader).CornerRadius=UDim.new(0,16)
 local ksHFix=Instance.new("Frame",ksHeader)
 ksHFix.Size=UDim2.new(1,0,0.5,0); ksHFix.Position=UDim2.new(0,0,0.5,0)
-ksHFix.BackgroundColor3=Color3.fromRGB(88,48,210)
-ksHFix.BorderSizePixel=0; ksHFix.ZIndex=101
+ksHFix.BackgroundColor3=Color3.fromRGB(88,48,210); ksHFix.BorderSizePixel=0; ksHFix.ZIndex=101
 makeDoorIcon(ksHeader,12,9,18,26,102)
 local ksHTitle=Instance.new("TextLabel",ksHeader)
 ksHTitle.Size=UDim2.new(1,-40,1,0); ksHTitle.Position=UDim2.new(0,38,0,0)
@@ -557,33 +692,33 @@ ksHTitle.TextColor3=Color3.new(1,1,1); ksHTitle.TextXAlignment=Enum.TextXAlignme
 ksHTitle.Font=Enum.Font.GothamBold; ksHTitle.TextSize=14; ksHTitle.ZIndex=102
 
 local bgGlow2=Instance.new("Frame",keyScreen)
-bgGlow2.Size=UDim2.new(0,260,0,260); bgGlow2.Position=UDim2.new(0.5,-130,0.4,-130)
+bgGlow2.Size=UDim2.new(0,240,0,240); bgGlow2.Position=UDim2.new(0.5,-120,0.38,-120)
 bgGlow2.BackgroundColor3=Color3.fromRGB(80,40,180)
 bgGlow2.BackgroundTransparency=0.9; bgGlow2.BorderSizePixel=0; bgGlow2.ZIndex=100
 Instance.new("UICorner",bgGlow2).CornerRadius=UDim.new(1,0)
 
 local ksDoor=makeDoorIcon(keyScreen,0,0,38,52,102)
-ksDoor.Position=UDim2.new(0.5,-19,0,62)
+ksDoor.Position=UDim2.new(0.5,-19,0,58)
 
 local ksTitleLbl=Instance.new("TextLabel",keyScreen)
-ksTitleLbl.Size=UDim2.new(1,-20,0,34); ksTitleLbl.Position=UDim2.new(0,10,0,122)
+ksTitleLbl.Size=UDim2.new(1,-20,0,32); ksTitleLbl.Position=UDim2.new(0,10,0,118)
 ksTitleLbl.BackgroundTransparency=1; ksTitleLbl.Text="Drip Hub"
 ksTitleLbl.TextColor3=Color3.new(1,1,1); ksTitleLbl.Font=Enum.Font.GothamBold
 ksTitleLbl.TextSize=24; ksTitleLbl.ZIndex=102
 
 local ksSubLbl=Instance.new("TextLabel",keyScreen)
-ksSubLbl.Size=UDim2.new(1,-20,0,16); ksSubLbl.Position=UDim2.new(0,10,0,156)
+ksSubLbl.Size=UDim2.new(1,-20,0,16); ksSubLbl.Position=UDim2.new(0,10,0,150)
 ksSubLbl.BackgroundTransparency=1; ksSubLbl.Text="DOORS  •  The Hotel  |  v1.5"
 ksSubLbl.TextColor3=Color3.fromRGB(140,120,200); ksSubLbl.Font=Enum.Font.Gotham
 ksSubLbl.TextSize=11; ksSubLbl.ZIndex=102
 
 local ksDivider=Instance.new("Frame",keyScreen)
-ksDivider.Size=UDim2.new(1,-40,0,1); ksDivider.Position=UDim2.new(0,20,0,182)
+ksDivider.Size=UDim2.new(1,-40,0,1); ksDivider.Position=UDim2.new(0,20,0,176)
 ksDivider.BackgroundColor3=Color3.fromRGB(80,55,160)
 ksDivider.BackgroundTransparency=0.5; ksDivider.BorderSizePixel=0; ksDivider.ZIndex=102
 
 local ksBox=Instance.new("TextBox",keyScreen)
-ksBox.Size=UDim2.new(1,-40,0,42); ksBox.Position=UDim2.new(0,20,0,194)
+ksBox.Size=UDim2.new(1,-40,0,42); ksBox.Position=UDim2.new(0,20,0,188)
 ksBox.BackgroundColor3=Color3.fromRGB(18,16,32); ksBox.BorderSizePixel=0
 ksBox.Text=""; ksBox.PlaceholderText="Paste your key here..."
 ksBox.TextColor3=Color3.fromRGB(215,200,255)
@@ -593,7 +728,7 @@ ksBox.ClearTextOnFocus=false; ksBox.ZIndex=103
 Instance.new("UICorner",ksBox).CornerRadius=UDim.new(0,10)
 
 local ksUnlock=Instance.new("TextButton",keyScreen)
-ksUnlock.Size=UDim2.new(1,-40,0,40); ksUnlock.Position=UDim2.new(0,20,0,248)
+ksUnlock.Size=UDim2.new(1,-40,0,40); ksUnlock.Position=UDim2.new(0,20,0,242)
 ksUnlock.BackgroundColor3=Color3.fromRGB(88,48,210); ksUnlock.BorderSizePixel=0
 ksUnlock.Text="UNLOCK"; ksUnlock.TextColor3=Color3.new(1,1,1)
 ksUnlock.Font=Enum.Font.GothamBold; ksUnlock.TextSize=14
@@ -601,7 +736,7 @@ ksUnlock.AutoButtonColor=false; ksUnlock.ZIndex=103
 Instance.new("UICorner",ksUnlock).CornerRadius=UDim.new(0,10)
 
 local ksGetKey=Instance.new("TextButton",keyScreen)
-ksGetKey.Size=UDim2.new(1,-40,0,34); ksGetKey.Position=UDim2.new(0,20,0,298)
+ksGetKey.Size=UDim2.new(1,-40,0,34); ksGetKey.Position=UDim2.new(0,20,0,292)
 ksGetKey.BackgroundColor3=Color3.fromRGB(28,22,50); ksGetKey.BorderSizePixel=0
 ksGetKey.Text="🔑  GET KEY"; ksGetKey.TextColor3=Color3.fromRGB(170,140,255)
 ksGetKey.Font=Enum.Font.GothamBold; ksGetKey.TextSize=12
@@ -611,50 +746,47 @@ local gkStroke=Instance.new("UIStroke",ksGetKey)
 gkStroke.Color=Color3.fromRGB(100,70,220); gkStroke.Thickness=1.5; gkStroke.Transparency=0.5
 
 local ksStatus=Instance.new("TextLabel",keyScreen)
-ksStatus.Size=UDim2.new(1,-20,0,20); ksStatus.Position=UDim2.new(0,10,0,344)
+ksStatus.Size=UDim2.new(1,-20,0,20); ksStatus.Position=UDim2.new(0,10,0,338)
 ksStatus.BackgroundTransparency=1; ksStatus.Text=""
 ksStatus.TextColor3=Color3.fromRGB(255,80,80)
 ksStatus.Font=Enum.Font.GothamBold; ksStatus.TextSize=11; ksStatus.ZIndex=102
 
--- SDK loading indicator
 local ksSDKStatus=Instance.new("TextLabel",keyScreen)
-ksSDKStatus.Size=UDim2.new(1,-20,0,16); ksSDKStatus.Position=UDim2.new(0,10,0,368)
-ksSDKStatus.BackgroundTransparency=1; ksSDKStatus.Text="⟳ Loading key system..."
+ksSDKStatus.Size=UDim2.new(1,-20,0,16); ksSDKStatus.Position=UDim2.new(0,10,0,364)
+ksSDKStatus.BackgroundTransparency=1; ksSDKStatus.Text="⟳  Loading key system..."
 ksSDKStatus.TextColor3=Color3.fromRGB(140,120,200)
 ksSDKStatus.Font=Enum.Font.Gotham; ksSDKStatus.TextSize=10; ksSDKStatus.ZIndex=102
 
--- update SDK indicator once loaded
 task.spawn(function()
     while not jnkieLoaded do task.wait(0.5) end
-    ksSDKStatus.Text="✓ Key system ready"
-    ksSDKStatus.TextColor3=Color3.fromRGB(80,200,120)
+    if ksSDKStatus and ksSDKStatus.Parent then
+        ksSDKStatus.Text="✓  Key system ready"
+        ksSDKStatus.TextColor3=Color3.fromRGB(80,200,120)
+    end
 end)
+
+-- ── UNLOCK SUCCESS (destroys key screen, opens menu) ──
+local function unlockSuccess()
+    unlocked = true
+    ksStatus.TextColor3 = Color3.fromRGB(80,255,120)
+    ksStatus.Text       = "✓  Welcome to Drip Hub"
+    task.wait(0.8)
+    keyScreen:Destroy()         -- clean destroy, no tween bugs
+    mobGlow.Visible = true
+    mobBtn.Visible  = true
+    menuOpen        = true      -- auto-open menu on unlock
+    frame.Visible   = true
+    mobBtn.BackgroundColor3        = Color3.fromRGB(120,70,240)
+    mobGlow.BackgroundTransparency = 0.55
+end
 
 local function shakeBox()
     for i=1,6 do
         local off=(i%2==0) and 7 or -7
-        ksBox.Position=UDim2.new(0,20+off,0,194)
+        ksBox.Position=UDim2.new(0,20+off,0,188)
         task.wait(0.04)
     end
-    ksBox.Position=UDim2.new(0,20,0,194)
-end
-
-local function unlockSuccess()
-    unlocked=true
-    ksStatus.TextColor3=Color3.fromRGB(80,255,120)
-    ksStatus.Text="✓  Welcome to Drip Hub"
-    task.wait(0.7)
-    for _, obj in ipairs(keyScreen:GetChildren()) do
-        if obj:IsA("GuiObject") then
-            TweenSvc:Create(obj,TweenInfo.new(0.45),
-                {BackgroundTransparency=1,TextTransparency=1}):Play()
-        end
-    end
-    TweenSvc:Create(keyScreen,TweenInfo.new(0.5,Enum.EasingStyle.Quad),
-        {BackgroundTransparency=1}):Play()
-    task.wait(0.5)
-    keyScreen.Visible=false
-    mobGlow.Visible=true; mobBtn.Visible=true
+    ksBox.Position=UDim2.new(0,20,0,188)
 end
 
 local function tryKey()
@@ -666,7 +798,7 @@ local function tryKey()
     end
     if not jnkieLoaded then
         ksStatus.TextColor3=Color3.fromRGB(255,180,50)
-        ksStatus.Text="⟳  Key system still loading, wait..."
+        ksStatus.Text="⟳  Key system loading, wait..."
         return
     end
     ksUnlock.Text="Checking..."
@@ -715,231 +847,16 @@ ksGetKey.MouseButton1Click:Connect(function()
 end)
 
 ksUnlock.MouseEnter:Connect(function()
-    TweenSvc:Create(ksUnlock,TweenInfo.new(0.15),
-        {BackgroundColor3=Color3.fromRGB(108,62,240)}):Play()
+    TweenSvc:Create(ksUnlock,TweenInfo.new(0.15),{BackgroundColor3=Color3.fromRGB(108,62,240)}):Play()
 end)
 ksUnlock.MouseLeave:Connect(function()
-    TweenSvc:Create(ksUnlock,TweenInfo.new(0.15),
-        {BackgroundColor3=Color3.fromRGB(88,48,210)}):Play()
+    TweenSvc:Create(ksUnlock,TweenInfo.new(0.15),{BackgroundColor3=Color3.fromRGB(88,48,210)}):Play()
 end)
 ksGetKey.MouseEnter:Connect(function()
-    TweenSvc:Create(ksGetKey,TweenInfo.new(0.15),
-        {BackgroundColor3=Color3.fromRGB(38,30,65)}):Play()
+    TweenSvc:Create(ksGetKey,TweenInfo.new(0.15),{BackgroundColor3=Color3.fromRGB(38,30,65)}):Play()
 end)
 ksGetKey.MouseLeave:Connect(function()
-    TweenSvc:Create(ksGetKey,TweenInfo.new(0.15),
-        {BackgroundColor3=Color3.fromRGB(28,22,50)}):Play()
-end)
-
--- ── MAIN MENU ────────────────────────────────────
-local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,320,0,560); frame.Position=UDim2.new(0.5,-160,0.5,-280)
-frame.BackgroundColor3=Color3.fromRGB(13,13,20)
-frame.BorderSizePixel=0; frame.Active=true; frame.Draggable=true; frame.Visible=false
-Instance.new("UICorner",frame).CornerRadius=UDim.new(0,14)
-
-local glowF=Instance.new("Frame",frame)
-glowF.Size=UDim2.new(1,4,1,4); glowF.Position=UDim2.new(0,-2,0,-2)
-glowF.BackgroundColor3=Color3.fromRGB(110,65,230)
-glowF.BackgroundTransparency=0.82; glowF.BorderSizePixel=0; glowF.ZIndex=0
-Instance.new("UICorner",glowF).CornerRadius=UDim.new(0,16)
-
-local titleBar=Instance.new("Frame",frame)
-titleBar.Size=UDim2.new(1,0,0,48)
-titleBar.BackgroundColor3=Color3.fromRGB(88,48,210)
-titleBar.BorderSizePixel=0; titleBar.ZIndex=2
-Instance.new("UICorner",titleBar).CornerRadius=UDim.new(0,14)
-local tbFix=Instance.new("Frame",titleBar)
-tbFix.Size=UDim2.new(1,0,0.5,0); tbFix.Position=UDim2.new(0,0,0.5,0)
-tbFix.BackgroundColor3=Color3.fromRGB(88,48,210); tbFix.BorderSizePixel=0; tbFix.ZIndex=2
-
-local t1=Instance.new("TextLabel",titleBar)
-t1.Size=UDim2.new(0,160,0,22); t1.Position=UDim2.new(0,14,0,6)
-t1.BackgroundTransparency=1; t1.Text="Drip Hub"
-t1.TextColor3=Color3.new(1,1,1); t1.TextXAlignment=Enum.TextXAlignment.Left
-t1.Font=Enum.Font.GothamBold; t1.TextSize=17; t1.ZIndex=3
-
-local t2=Instance.new("TextLabel",titleBar)
-t2.Size=UDim2.new(0,160,0,14); t2.Position=UDim2.new(0,14,0,28)
-t2.BackgroundTransparency=1; t2.Text="DOORS  •  v1.5"
-t2.TextColor3=Color3.fromRGB(190,165,255)
-t2.TextXAlignment=Enum.TextXAlignment.Left
-t2.Font=Enum.Font.Gotham; t2.TextSize=10; t2.ZIndex=3
-
-local rDoor=makeDoorIcon(titleBar,0,0,20,28,3)
-rDoor.Position=UDim2.new(1,-34,0.5,-14)
-
-local nameLbl=Instance.new("TextLabel",titleBar)
-nameLbl.Size=UDim2.new(0,80,1,0); nameLbl.Position=UDim2.new(1,-118,0,0)
-nameLbl.BackgroundTransparency=1; nameLbl.Text="Drip Hub"
-nameLbl.TextColor3=Color3.fromRGB(210,185,255)
-nameLbl.TextXAlignment=Enum.TextXAlignment.Right
-nameLbl.Font=Enum.Font.GothamBold; nameLbl.TextSize=12; nameLbl.ZIndex=3
-
-local divMain=Instance.new("Frame",frame)
-divMain.Size=UDim2.new(1,-24,0,1); divMain.Position=UDim2.new(0,12,0,49)
-divMain.BackgroundColor3=Color3.fromRGB(80,50,160)
-divMain.BackgroundTransparency=0.5; divMain.BorderSizePixel=0
-
-local scroll=Instance.new("ScrollingFrame",frame)
-scroll.Size=UDim2.new(1,-8,1,-96); scroll.Position=UDim2.new(0,4,0,53)
-scroll.BackgroundTransparency=1; scroll.ScrollBarThickness=3
-scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y; scroll.CanvasSize=UDim2.new(0,0,0,0)
-
-local layout=Instance.new("UIListLayout",scroll)
-layout.SortOrder=Enum.SortOrder.LayoutOrder; layout.Padding=UDim.new(0,3)
-local padInst=Instance.new("UIPadding",scroll)
-padInst.PaddingLeft=UDim.new(0,6); padInst.PaddingRight=UDim.new(0,6)
-
-local function section(text, order)
-    local lbl=Instance.new("TextLabel",scroll)
-    lbl.Size=UDim2.new(1,-4,0,22); lbl.BackgroundTransparency=1
-    lbl.Text="  "..text; lbl.TextColor3=Color3.fromRGB(130,90,255)
-    lbl.Font=Enum.Font.GothamBold; lbl.TextSize=11
-    lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.LayoutOrder=order
-end
-
-local function toggle(label, key, order, onToggle)
-    local row=Instance.new("Frame",scroll)
-    row.Size=UDim2.new(1,-4,0,28); row.BackgroundColor3=Color3.fromRGB(20,20,30)
-    row.BorderSizePixel=0; row.LayoutOrder=order
-    Instance.new("UICorner",row).CornerRadius=UDim.new(0,7)
-    local lbl=Instance.new("TextLabel",row)
-    lbl.Size=UDim2.new(1,-58,1,0); lbl.Position=UDim2.new(0,10,0,0)
-    lbl.BackgroundTransparency=1; lbl.Text=label
-    lbl.TextColor3=Color3.fromRGB(195,185,220)
-    lbl.TextXAlignment=Enum.TextXAlignment.Left
-    lbl.Font=Enum.Font.Gotham; lbl.TextSize=12
-    local track=Instance.new("Frame",row)
-    track.Size=UDim2.new(0,44,0,22); track.Position=UDim2.new(1,-50,0.5,-11)
-    track.BorderSizePixel=0
-    Instance.new("UICorner",track).CornerRadius=UDim.new(1,0)
-    local thumb=Instance.new("Frame",track)
-    thumb.Size=UDim2.new(0,18,0,18); thumb.BorderSizePixel=0
-    thumb.BackgroundColor3=Color3.new(1,1,1)
-    Instance.new("UICorner",thumb).CornerRadius=UDim.new(1,0)
-    local function refresh()
-        local on=cfg[key]
-        track.BackgroundColor3=on
-            and Color3.fromRGB(100,55,230) or Color3.fromRGB(45,40,65)
-        thumb.Position=on
-            and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,2,0.5,-9)
-    end
-    refresh()
-    local btn=Instance.new("TextButton",row)
-    btn.Size=UDim2.fromScale(1,1); btn.BackgroundTransparency=1; btn.Text=""
-    btn.MouseButton1Click:Connect(function()
-        cfg[key]=not cfg[key]; refresh()
-        if onToggle then onToggle(cfg[key]) end
-    end)
-end
-
-section("MOVEMENT",1)
-toggle("Speed Hack",               "speedHack",      2)
-toggle("Noclip",                   "noclip",         3)
-toggle("Fly",                      "flyEnabled",     4,
-    function(v) if v then startFly() else stopFly() end end)
-toggle("Jump Boost",               "jumpBoost",      5)
-toggle("No Acceleration",          "noAccel",        6)
-section("PLAYER",10)
-toggle("Door Noclip",              "doorNoclip",     11)
-toggle("Door Reach",               "doorReach",      12)
-toggle("Fast Closet Exit",         "fastClosetExit", 13)
-toggle("Anti AFK",                 "antiAFK",        14)
-section("AUTOMATION",20)
-toggle("Auto Interact",            "autoInteract",   21)
-toggle("Auto Hide",                "autoHide",       22)
-toggle("Auto Breaker Box",         "autoBreaker",    23)
-toggle("Auto Library Code",        "autoLibCode",    24)
-toggle("Bruteforce Code",          "bruteforce",     25)
-section("ANTI ENTITY",30)
-toggle("Anti Screech",             "antiScreech",    31)
-toggle("Anti Eyes",                "antiEyes",       32)
-toggle("Anti Rush",                "antiRush",       33)
-toggle("Anti Ambush",              "antiAmbush",     34)
-toggle("Anti Dupe",                "antiDupe",       35)
-toggle("Anti Snare",               "antiSnare",      36)
-toggle("Anti Figure",              "antiFigure",     37)
-toggle("Anti Seek",                "antiSeek",       38)
-section("NO DAMAGE",40)
-toggle("No Dmg  (Screech)",        "noDmgScreech",  41)
-toggle("No Dmg  (Glitch Screech)", "noDmgGlitch",   42)
-toggle("No Dmg  (Halt)",           "noDmgHalt",     43)
-section("ESP",50)
-toggle("ESP Enable",               "espOn",         51,
-    function(v) if v then buildESP() else clearESP() end end)
-toggle("ESP Entities",             "espEntities",   52)
-toggle("ESP Entity Distance",      "espEntityDist", 53)
-toggle("ESP Players",              "espPlayers",    54)
-toggle("ESP Doors",                "espDoors",      55)
-toggle("ESP Items & Keys",         "espItems",      56)
-toggle("ESP Gold",                 "espGold",       57)
-toggle("ESP Chests",               "espChests",     58)
-toggle("ESP Hide Spots",           "espClosets",    59)
-
--- ── FOOTER ───────────────────────────────────────
-local footDiv=Instance.new("Frame",frame)
-footDiv.Size=UDim2.new(1,-24,0,1); footDiv.Position=UDim2.new(0,12,1,-37)
-footDiv.BackgroundColor3=Color3.fromRGB(80,50,160)
-footDiv.BackgroundTransparency=0.6; footDiv.BorderSizePixel=0; footDiv.ZIndex=5
-
-local footer=Instance.new("Frame",frame)
-footer.Size=UDim2.new(1,0,0,36); footer.Position=UDim2.new(0,0,1,-36)
-footer.BackgroundColor3=Color3.fromRGB(10,10,18)
-footer.BorderSizePixel=0; footer.ZIndex=5
-Instance.new("UICorner",footer).CornerRadius=UDim.new(0,14)
-local footFix=Instance.new("Frame",footer)
-footFix.Size=UDim2.new(1,0,0.5,0)
-footFix.BackgroundColor3=Color3.fromRGB(10,10,18)
-footFix.BorderSizePixel=0; footFix.ZIndex=5
-
-local discBtn=Instance.new("TextButton",footer)
-discBtn.Size=UDim2.new(0,115,0,26); discBtn.Position=UDim2.new(0,8,0.5,-13)
-discBtn.BackgroundColor3=Color3.fromRGB(88,101,242)
-discBtn.BorderSizePixel=0; discBtn.Text=""
-discBtn.AutoButtonColor=false; discBtn.ZIndex=6
-Instance.new("UICorner",discBtn).CornerRadius=UDim.new(0,7)
-local discIcon=Instance.new("TextLabel",discBtn)
-discIcon.Size=UDim2.new(0,26,1,0); discIcon.BackgroundTransparency=1
-discIcon.Text="ⓓ"; discIcon.TextColor3=Color3.new(1,1,1)
-discIcon.Font=Enum.Font.GothamBold; discIcon.TextSize=14; discIcon.ZIndex=7
-local discLbl=Instance.new("TextLabel",discBtn)
-discLbl.Size=UDim2.new(1,-28,1,0); discLbl.Position=UDim2.new(0,26,0,0)
-discLbl.BackgroundTransparency=1; discLbl.Text="Discord"
-discLbl.TextColor3=Color3.new(1,1,1)
-discLbl.TextXAlignment=Enum.TextXAlignment.Left
-discLbl.Font=Enum.Font.GothamBold; discLbl.TextSize=12; discLbl.ZIndex=7
-
-local footVer=Instance.new("TextLabel",footer)
-footVer.Size=UDim2.new(0,110,1,0); footVer.Position=UDim2.new(1,-115,0,0)
-footVer.BackgroundTransparency=1; footVer.Text="Drip Hub  v1.5"
-footVer.TextColor3=Color3.fromRGB(80,65,120)
-footVer.TextXAlignment=Enum.TextXAlignment.Right
-footVer.Font=Enum.Font.Gotham; footVer.TextSize=10; footVer.ZIndex=6
-
-discBtn.MouseButton1Click:Connect(function()
-    openURL(DISCORD)
-    discBtn.BackgroundColor3=Color3.fromRGB(60,75,200); discLbl.Text="Copied!"
-    task.delay(2,function()
-        discBtn.BackgroundColor3=Color3.fromRGB(88,101,242); discLbl.Text="Discord"
-    end)
-end)
-discBtn.MouseEnter:Connect(function()
-    TweenSvc:Create(discBtn,TweenInfo.new(0.15),
-        {BackgroundColor3=Color3.fromRGB(105,118,255)}):Play()
-end)
-discBtn.MouseLeave:Connect(function()
-    TweenSvc:Create(discBtn,TweenInfo.new(0.15),
-        {BackgroundColor3=Color3.fromRGB(88,101,242)}):Play()
-end)
-
--- ── MOBILE BUTTON LOGIC ──────────────────────────
-mobBtn.MouseButton1Click:Connect(function()
-    if not unlocked then return end
-    menuOpen=not menuOpen; frame.Visible=menuOpen
-    mobBtn.BackgroundColor3=menuOpen
-        and Color3.fromRGB(120,70,240) or Color3.fromRGB(88,48,210)
-    mobGlow.BackgroundTransparency=menuOpen and 0.55 or 0.75
+    TweenSvc:Create(ksGetKey,TweenInfo.new(0.15),{BackgroundColor3=Color3.fromRGB(28,22,50)}):Play()
 end)
 
 -- ── KEYBOARD BINDS ───────────────────────────────
@@ -956,4 +873,4 @@ UIS.InputBegan:Connect(function(inp, gpe)
     if inp.KeyCode==cfg.keyHide then cfg.autoHide=not cfg.autoHide end
 end)
 
-print("[Drip Hub v1.5] loaded — wait for '✓ Key system ready' then paste key")
+print("[Drip Hub v1.5] wait for '✓ Key system ready' then paste key")
