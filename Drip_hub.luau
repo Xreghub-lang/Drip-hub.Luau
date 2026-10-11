@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════
--- Drip Hub  v1.5  |  DOORS - The Hotel
+-- Drip Hub  v1.6  |  DOORS - The Hotel
 -- Executor: Any UNC-compatible (Synapse X, KRNL, Delta, Xeno, Fluxus)
 -- Key provider: https://jnkie.com/get-key/driphubkeys
 -- Discord:      https://discord.gg/Phy76Bg6B
@@ -33,6 +33,7 @@ local KEY_URL  = "https://jnkie.com/get-key/driphubkeys"
 local DISCORD  = "https://discord.gg/Phy76Bg6B"
 local unlocked = false
 local menuOpen = false
+local menuLocked = false  -- drag lock state
 
 local Junkie
 local jnkieLoaded = false
@@ -443,7 +444,7 @@ local function makeDoorIcon(parent, x, y, w, h, zi)
     return body
 end
 
--- ── MAIN MENU (built first so unlockSuccess can reference it) ──
+-- ── MAIN MENU ────────────────────────────────────
 local frame=Instance.new("Frame",gui)
 frame.Size=UDim2.new(0,320,0,560); frame.Position=UDim2.new(0.5,-160,0.5,-280)
 frame.BackgroundColor3=Color3.fromRGB(13,13,20)
@@ -456,6 +457,7 @@ glowF.BackgroundColor3=Color3.fromRGB(110,65,230)
 glowF.BackgroundTransparency=0.82; glowF.BorderSizePixel=0; glowF.ZIndex=0
 Instance.new("UICorner",glowF).CornerRadius=UDim.new(0,16)
 
+-- ── TITLE BAR ────────────────────────────────────
 local titleBar=Instance.new("Frame",frame)
 titleBar.Size=UDim2.new(1,0,0,48)
 titleBar.BackgroundColor3=Color3.fromRGB(88,48,210)
@@ -465,33 +467,106 @@ local tbFix=Instance.new("Frame",titleBar)
 tbFix.Size=UDim2.new(1,0,0.5,0); tbFix.Position=UDim2.new(0,0,0.5,0)
 tbFix.BackgroundColor3=Color3.fromRGB(88,48,210); tbFix.BorderSizePixel=0; tbFix.ZIndex=2
 
+-- left: title + sub
 local t1=Instance.new("TextLabel",titleBar)
-t1.Size=UDim2.new(0,160,0,22); t1.Position=UDim2.new(0,14,0,6)
+t1.Size=UDim2.new(0,130,0,22); t1.Position=UDim2.new(0,14,0,6)
 t1.BackgroundTransparency=1; t1.Text="Drip Hub"
 t1.TextColor3=Color3.new(1,1,1); t1.TextXAlignment=Enum.TextXAlignment.Left
 t1.Font=Enum.Font.GothamBold; t1.TextSize=17; t1.ZIndex=3
 
 local t2=Instance.new("TextLabel",titleBar)
-t2.Size=UDim2.new(0,160,0,14); t2.Position=UDim2.new(0,14,0,28)
-t2.BackgroundTransparency=1; t2.Text="DOORS  •  v1.5"
+t2.Size=UDim2.new(0,130,0,14); t2.Position=UDim2.new(0,14,0,28)
+t2.BackgroundTransparency=1; t2.Text="DOORS  •  v1.6"
 t2.TextColor3=Color3.fromRGB(190,165,255); t2.TextXAlignment=Enum.TextXAlignment.Left
 t2.Font=Enum.Font.Gotham; t2.TextSize=10; t2.ZIndex=3
 
-local rDoor=makeDoorIcon(titleBar,0,0,20,28,3)
-rDoor.Position=UDim2.new(1,-34,0.5,-14)
+-- right: door icon + "Drip Hub" label
+local rDoor=makeDoorIcon(titleBar,0,0,18,26,3)
+rDoor.Position=UDim2.new(1,-86,0.5,-13)
 
 local nameLbl=Instance.new("TextLabel",titleBar)
-nameLbl.Size=UDim2.new(0,80,1,0); nameLbl.Position=UDim2.new(1,-118,0,0)
+nameLbl.Size=UDim2.new(0,62,1,0); nameLbl.Position=UDim2.new(1,-148,0,0)
 nameLbl.BackgroundTransparency=1; nameLbl.Text="Drip Hub"
 nameLbl.TextColor3=Color3.fromRGB(210,185,255); nameLbl.TextXAlignment=Enum.TextXAlignment.Right
-nameLbl.Font=Enum.Font.GothamBold; nameLbl.TextSize=12; nameLbl.ZIndex=3
+nameLbl.Font=Enum.Font.GothamBold; nameLbl.TextSize=11; nameLbl.ZIndex=3
 
-Instance.new("Frame",frame).Size=UDim2.new(1,-24,0,1)
-local divMain=frame:FindFirstChildWhichIsA("Frame")
-divMain.Position=UDim2.new(0,12,0,49)
+-- ── LOCK BUTTON ──────────────────────────────────
+local lockBtn=Instance.new("TextButton",titleBar)
+lockBtn.Size=UDim2.new(0,28,0,28); lockBtn.Position=UDim2.new(1,-64,0.5,-14)
+lockBtn.BackgroundColor3=Color3.fromRGB(55,35,120)
+lockBtn.BorderSizePixel=0; lockBtn.Text="🔓"
+lockBtn.TextColor3=Color3.new(1,1,1); lockBtn.Font=Enum.Font.GothamBold
+lockBtn.TextSize=14; lockBtn.AutoButtonColor=false; lockBtn.ZIndex=4
+Instance.new("UICorner",lockBtn).CornerRadius=UDim.new(0,6)
+
+lockBtn.MouseButton1Click:Connect(function()
+    menuLocked = not menuLocked
+    frame.Draggable = not menuLocked
+    if menuLocked then
+        lockBtn.Text = "🔒"
+        lockBtn.BackgroundColor3 = Color3.fromRGB(200,60,60)
+        TweenSvc:Create(lockBtn,TweenInfo.new(0.15),
+            {BackgroundColor3=Color3.fromRGB(180,40,40)}):Play()
+    else
+        lockBtn.Text = "🔓"
+        TweenSvc:Create(lockBtn,TweenInfo.new(0.15),
+            {BackgroundColor3=Color3.fromRGB(55,35,120)}):Play()
+    end
+end)
+
+-- ── HIDE BUTTON (X) ──────────────────────────────
+local hideBtn=Instance.new("TextButton",titleBar)
+hideBtn.Size=UDim2.new(0,28,0,28); hideBtn.Position=UDim2.new(1,-30,0.5,-14)
+hideBtn.BackgroundColor3=Color3.fromRGB(55,35,120)
+hideBtn.BorderSizePixel=0; hideBtn.Text="✕"
+hideBtn.TextColor3=Color3.new(1,1,1); hideBtn.Font=Enum.Font.GothamBold
+hideBtn.TextSize=14; hideBtn.AutoButtonColor=false; hideBtn.ZIndex=4
+Instance.new("UICorner",hideBtn).CornerRadius=UDim.new(0,6)
+
+hideBtn.MouseButton1Click:Connect(function()
+    menuOpen = false
+    frame.Visible = false
+    if mobBtn then
+        mobBtn.BackgroundColor3 = Color3.fromRGB(88,48,210)
+    end
+    if mobGlow then
+        mobGlow.BackgroundTransparency = 0.75
+    end
+end)
+
+-- hover effects for both buttons
+for _, btn in ipairs({lockBtn, hideBtn}) do
+    btn.MouseEnter:Connect(function()
+        if btn == hideBtn then
+            TweenSvc:Create(btn,TweenInfo.new(0.15),
+                {BackgroundColor3=Color3.fromRGB(180,40,40)}):Play()
+        else
+            if not menuLocked then
+                TweenSvc:Create(btn,TweenInfo.new(0.15),
+                    {BackgroundColor3=Color3.fromRGB(80,55,160)}):Play()
+            end
+        end
+    end)
+    btn.MouseLeave:Connect(function()
+        if btn == hideBtn then
+            TweenSvc:Create(btn,TweenInfo.new(0.15),
+                {BackgroundColor3=Color3.fromRGB(55,35,120)}):Play()
+        else
+            if not menuLocked then
+                TweenSvc:Create(btn,TweenInfo.new(0.15),
+                    {BackgroundColor3=Color3.fromRGB(55,35,120)}):Play()
+            end
+        end
+    end)
+end
+
+-- ── DIVIDER ──────────────────────────────────────
+local divMain=Instance.new("Frame",frame)
+divMain.Size=UDim2.new(1,-24,0,1); divMain.Position=UDim2.new(0,12,0,49)
 divMain.BackgroundColor3=Color3.fromRGB(80,50,160)
 divMain.BackgroundTransparency=0.5; divMain.BorderSizePixel=0
 
+-- ── SCROLL AREA ──────────────────────────────────
 local scroll=Instance.new("ScrollingFrame",frame)
 scroll.Size=UDim2.new(1,-8,1,-96); scroll.Position=UDim2.new(0,4,0,53)
 scroll.BackgroundTransparency=1; scroll.ScrollBarThickness=3
@@ -542,6 +617,7 @@ local function toggle(label, key, order, onToggle)
     end)
 end
 
+-- ── SECTIONS ─────────────────────────────────────
 section("MOVEMENT",1)
 toggle("Speed Hack",               "speedHack",      2)
 toggle("Noclip",                   "noclip",         3)
@@ -614,7 +690,7 @@ discLbl.Font=Enum.Font.GothamBold; discLbl.TextSize=12; discLbl.ZIndex=7
 
 local footVer=Instance.new("TextLabel",footer)
 footVer.Size=UDim2.new(0,110,1,0); footVer.Position=UDim2.new(1,-115,0,0)
-footVer.BackgroundTransparency=1; footVer.Text="Drip Hub  v1.5"
+footVer.BackgroundTransparency=1; footVer.Text="Drip Hub  v1.6"
 footVer.TextColor3=Color3.fromRGB(80,65,120); footVer.TextXAlignment=Enum.TextXAlignment.Right
 footVer.Font=Enum.Font.Gotham; footVer.TextSize=10; footVer.ZIndex=6
 
@@ -708,7 +784,7 @@ ksTitleLbl.TextSize=24; ksTitleLbl.ZIndex=102
 
 local ksSubLbl=Instance.new("TextLabel",keyScreen)
 ksSubLbl.Size=UDim2.new(1,-20,0,16); ksSubLbl.Position=UDim2.new(0,10,0,150)
-ksSubLbl.BackgroundTransparency=1; ksSubLbl.Text="DOORS  •  The Hotel  |  v1.5"
+ksSubLbl.BackgroundTransparency=1; ksSubLbl.Text="DOORS  •  The Hotel  |  v1.6"
 ksSubLbl.TextColor3=Color3.fromRGB(140,120,200); ksSubLbl.Font=Enum.Font.Gotham
 ksSubLbl.TextSize=11; ksSubLbl.ZIndex=102
 
@@ -765,16 +841,15 @@ task.spawn(function()
     end
 end)
 
--- ── UNLOCK SUCCESS (destroys key screen, opens menu) ──
 local function unlockSuccess()
     unlocked = true
     ksStatus.TextColor3 = Color3.fromRGB(80,255,120)
     ksStatus.Text       = "✓  Welcome to Drip Hub"
     task.wait(0.8)
-    keyScreen:Destroy()         -- clean destroy, no tween bugs
+    keyScreen:Destroy()
     mobGlow.Visible = true
     mobBtn.Visible  = true
-    menuOpen        = true      -- auto-open menu on unlock
+    menuOpen        = true
     frame.Visible   = true
     mobBtn.BackgroundColor3        = Color3.fromRGB(120,70,240)
     mobGlow.BackgroundTransparency = 0.55
@@ -873,4 +948,4 @@ UIS.InputBegan:Connect(function(inp, gpe)
     if inp.KeyCode==cfg.keyHide then cfg.autoHide=not cfg.autoHide end
 end)
 
-print("[Drip Hub v1.5] wait for '✓ Key system ready' then paste key")
+print("[Drip Hub v1.6] loaded — key screen ready")
