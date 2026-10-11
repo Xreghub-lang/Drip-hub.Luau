@@ -67,7 +67,26 @@ local function validateKey(userKey)
         return false, "sdk_error"
     end
     if result.valid then
-        return true
+        return 
+truelocal function unlockSuccess()
+    unlocked = true
+    ksStatus.TextColor3 = Color3.fromRGB(80,255,120)
+    ksStatus.Text       = "✓  Welcome to Drip Hub"
+    task.wait(0.8)
+
+    -- destroy cleanly instead of tweening (avoids partial-fade bug)
+    keyScreen:Destroy()
+
+    -- show mobile button
+    mobGlow.Visible = true
+    mobBtn.Visible  = true
+
+    -- auto-open the main menu immediately
+    menuOpen        = true
+    frame.Visible   = true
+    mobBtn.BackgroundColor3         = Color3.fromRGB(120,70,240)
+    mobGlow.BackgroundTransparency  = 0.55
+end
     end
     return false, tostring(result.error or "invalid")
 end
